@@ -1,0 +1,207 @@
+---
+title: "R for Data Science Assessment"
+author: "Adeyemo Oluwatosin M."
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: '3'
+    df_print: paged
+  html_notebook:
+    toc: yes
+    toc_depth: 3
+    theme: readable
+---
+## Introduction
+This script contains my solution to analyse the gapminder data set so as to assess my data science skills in R language. The dataset used for this analysis is the gapminder data which contains demographic, health, economic and environmental variables of different countries from 1962 to 2007. The dataset can be found <a href="https://github.com/Bioinformatics-Research-Network/skill-assessments/blob/main/R%20for%20Data%20Science/gapminder_clean.csv"> here </a>
+
+## Import libraries
+```{r libraries, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(ggpubr)
+library(plotly)
+library(kableExtra)
+```
+
+## SECTION A
+### Question 1
+Read in the data
+```{r warning = FALSE, message = FALSE}
+gapminder <- read_csv("gapminder_clean.csv")
+```
+
+```{r}
+gapminder%>%sample_n(10)%>%
+  kbl() %>%
+  kable_classic_2(full_width = F)
+```
+
+
+### Question 2
+Filter the data to include only rows where `Year` is `1962` and then make a scatter plot comparing `'CO2 emissions (metric tons per capita)'` and `gdpPercap` for the filtered data.
+
+```{r warning = FALSE, message = FALSE, fig.align="center",fig.width = 10}
+plot_1 <- gapminder %>%
+  filter(Year == 1962) %>%
+  ggplot(mapping = aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap)) +
+  geom_point()+
+  labs(title = "CO2 emmision (metric tons per capita) VS GDP Per capita in 1962", y = "GDP per Capita")
+
+ggplotly(plot_1)
+```
+
+### Question 3
+On the filtered data, calculate the correlation of `'CO2 emissions (metric tons per capita)'` and `gdpPercap`. What is the correlation and associated p value?
+
+```{r warning = FALSE, message = FALSE}
+gapminder %>%
+  filter(Year == 1962) %>%
+  ggplot(mapping = aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap)) +
+  geom_point()+
+  labs(title = "CO2 emmision (metric tons per capita) VS GDP Per capita in 1962", y = "GDP per Capita")+
+  stat_cor()
+```
+
+#### Observations
+
+There is a positive correlation between GDP per capital and CO2 emissions in 1962. The R-squared value is 0.93, which means that about 93% variation in GDP per capital can be explained by CO2 emissions. And a p-value that is less than 0.05 shows that the correlation coefficient is statistically significant, meaning that the correlation between the two variables is not by chance. 
+
+### Question 4
+On the unfiltered data, answer "In what year is the correlation between `'CO2 emissions (metric tons per capita)'` and `gdpPercap` the strongest?"
+```{r warning = FALSE, message = FALSE}
+# change the data type of Year from numeric to character
+gapminder$Year <- as.character(gapminder$Year)
+```
+
+
+```{r warning = FALSE, message = FALSE}
+gapminder %>%
+  ggplot(mapping = aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap, color = Year))+
+  geom_point()+
+  labs(title = "CO2 emissions VS GDP per capital")+
+  stat_cor()
+```
+**The scatter plot shows that 1967 is the year with the strongest correlation between CO2 emissions and GDP per cap**
+
+```{r}
+# Filter the data set to 1967
+gapminder_1967 <- gapminder %>%
+  filter(Year == 1967)
+```
+
+### Question 5
+Using `plotly`, create an interactive scatter plot comparing `'CO2 emissions (metric tons per capita)'` and `gdpPercap`, where the point size is determined by `pop` (population) and the color is determined by the `continent`. You can easily convert any `ggplot` plot to a `plotly` plot using the `ggplotly()` command.
+
+```{r warning = FALSE, message = FALSE, fig.align="center",fig.width = 10}
+plot1 <- ggplot(data = gapminder_1967, mapping = aes(x = `CO2 emissions (metric tons per capita)`, y = gdpPercap, color = continent, size = pop))+
+  geom_point() +
+  labs(title = "CO2 emissions VS GDP per capital in 1967")
+
+ggplotly(plot1)
+```
+#### Observations
+
+1. Asia has the highest CO2 emissions and GDP per capital, and it is also the most populated continent
+
+2. The two variables are positively correlated, an increase in CO2 emissions corresponds to an increase in GDP
+
+## SECTION B
+
+### Question 1
+What is the relationship between `continent` and `'Energy use (kg of oil equivalent per capita)'`? (stats test needed)
+```{r warning = FALSE, message = FALSE,  fig.align="center",fig.width = 10}
+plot2 <- ggplot(data = gapminder, mapping = aes(x = continent, y = `Energy use (kg of oil equivalent per capita)`)) +
+  geom_boxplot()+
+  scale_y_log10()+
+  stat_compare_means(method = 'anova')+
+  ggtitle("Energy Use Per Continent")
+
+ggplotly(plot2)
+```
+#### Observations
+
+1. A p-value < 0.05 indicates that there is a significant difference in the energy usage between continents
+
+2. Oceania has the highest median energy use of 3.61 while Africa has the lowest median value with 2.65
+
+### Question 2
+Is there a significant difference between Europe and Asia with respect to `'Imports of goods and services (% of GDP)'` in the years after 1990? (stats test needed)
+
+```{r warning = FALSE, message = FALSE}
+Gdp_Eur_Asia <- gapminder %>% 
+  filter(Year > 1990) %>%
+  filter(continent == 'Europe' | continent == 'Asia') %>%
+  select(continent, `Imports of goods and services (% of GDP)`)
+```
+
+```{r warning = FALSE, message = FALSE,  fig.align="center",fig.width = 10}
+plot3 <- ggplot(data = Gdp_Eur_Asia, mapping = aes(x = continent, y = `Imports of goods and services (% of GDP)`))+
+  geom_boxplot()+
+  stat_compare_means(method = 't.test')+
+  ggtitle(("% of GDP in Europe and Asia"))
+
+ggplotly(plot3)
+```
+**From the plot above, the p-value > 0.05 which means that there is no significant difference in the % of GDP between Asia and Europe**
+
+### Question 3
+What is the country (or countries) that has the highest `'Population density (people per sq. km of land area)'` across all years? (i.e., which country has the highest average ranking in this category across each time point in the data set?)
+
+```{r warning = FALSE, message = FALSE, fig.align="center",fig.width = 10}
+plot4 <- gapminder %>%
+  select(`Country Name`, Year, `Population density (people per sq. km of land area)`) %>%
+  group_by(`Year`, `Country Name`) %>%
+  summarise(ave_pop_density = mean(`Population density (people per sq. km of land area)`)) %>%
+  arrange(desc(ave_pop_density)) %>%
+  slice(1:5)%>%
+  ggplot(mapping = aes(x = Year, y = ave_pop_density, color = `Country Name`))+
+  geom_point()+
+  labs(title = "Top 5 countries with the highest population density in each year", x = "Year", y = "Population density")+
+  theme(axis.text.x = element_text(angle = 50, vjust = 1, hjust = 1, size = 12))
+
+ggplotly(plot4)
+```
+Five countries with the highest population density across all years are:
+
+1. Monaco
+
+2. Macao SAR, China
+
+3. Singapore
+
+4. Hong kong SAR, China
+
+5. Gibraltar.
+
+### Question 4
+What country (or countries) has shown the greatest increase in `'Life expectancy at birth, total (years)'` since 1962? 
+
+```{r warning = FALSE, message = FALSE}
+life_expectancy <- gapminder %>%
+  select(`Country Name`, `Life expectancy at birth, total (years)`) %>%
+  group_by(`Country Name`) %>%
+  summarise(ave_life_expectancy = mean(`Life expectancy at birth, total (years)`))%>%
+  arrange(desc(ave_life_expectancy)) %>%
+  slice(1:10)
+
+life_expectancy%>%
+  kbl(caption = "Top 10 countries with the highest life expectancy") %>%
+  kable_classic_2(full_width = F)
+```
+
+
+```{r warning = FALSE, message = FALSE, fig.align="center",fig.width = 10}
+plot5 <- ggplot(data = life_expectancy, mapping = aes(x = `Country Name`, y = ave_life_expectancy, color = `Country Name`))+
+  geom_point()+
+  theme(axis.ticks.x = element_blank(), axis.text.x = element_blank())+
+  labs(title = "Countries with the highest life expectancy", y = "Life expectancy")
+
+ggplotly(plot5)
+```
+**Iceland, Sweden and Japan are the countries with the highest life expectancy**
+
+## Conclusion
+From 1962 to 2007, Asia continent is the most populated but Europe (Iceland) has the highest average life expectancy. In all continents, there is a positive correlation between CO2 emission and GDP per capital.
+
+
+
